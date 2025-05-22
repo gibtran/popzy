@@ -1,6 +1,7 @@
 Popzy.elements = []
 function Popzy(options = {}) {
     this.opt = Object.assign({
+        // content,
         // templateId, 
         closeMethods:['button', 'overlay', 'escape'], 
         destroyOnClose:true,
@@ -9,10 +10,19 @@ function Popzy(options = {}) {
         // onOpen,
         // onClose
         }, options)
-    
-    this.template = document.querySelector(`#${this.opt.templateId}`)
-    if (!this.template) {
-        console.error("Template Id does not exist");
+    if (!this.opt.content && !this.opt.templateId) {
+        console.error("You must provide one of 'content' or 'templateId'.")
+        return
+    }
+    if (this.opt.content && this.opt.templateId) {
+        this.templateId = null;
+        console.warn("Both 'content' and 'templateId' are specified. 'content' will take precedence, and 'templateId' will be ignored.")
+    }
+    if (this.opt.templateId) {
+        this.template = document.querySelector(`#${this.opt.templateId}`)
+        if (!this.template) {
+            console.error("Template Id does not exist");
+        }
     }
     // cho phep dong
     this._allowBackdropClose = this.opt.closeMethods.includes('overlay')
@@ -45,8 +55,8 @@ Popzy.prototype._getScrollBarWidth = function() {
     this.opt.cssClass.forEach(className => {
         container.classList.add(className)
     });
-    const modalContent = document.createElement('div')
-    modalContent.className = 'popzy__content'
+    this._modalContent = document.createElement('div')
+    this._modalContent.className = 'popzy__content'
 
     if (this._allowButtonClose) {
         const modalClose = this._createButton('&times', 'popzy__close', () => this.close())
@@ -54,9 +64,15 @@ Popzy.prototype._getScrollBarWidth = function() {
         container.append(modalClose)
     }
     // Apeend phan tu va content vao dom
+    if (this.opt.content) {
+        this._modalContent.innerHTML = this.opt.content
+    }
+    if (this._content) {
+        this._modalContent.innerHTML = this._content
+    }
     const content = this.template.content.cloneNode(true)
-    modalContent.append(content)
-    container.append(modalContent)
+    this._modalContent.append(content)
+    container.append(this._modalContent)
     if (this.opt.footer) {
         this._modalFooter = document.createElement('div')
         this._modalFooter.className = 'popzy__footer'
@@ -66,6 +82,10 @@ Popzy.prototype._getScrollBarWidth = function() {
     }
     this._backdrop.append(container)
     document.body.append(this._backdrop)
+}
+// set content cho modal
+Popzy.prototype.setContent = function(content) {
+    this._content = content
 }
 // set content cho footer
 Popzy.prototype.setFooterContent = function(content) {
