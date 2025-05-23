@@ -18,7 +18,8 @@
         <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon" />
     </head>
     <body>
-        <!-- HEADER -->
+        <div class="wrapper">
+             <!-- HEADER -->
         <header class="header">
             <div class="container">
                 <h1 class="header__title">Popzy.js</h1>
@@ -438,15 +439,30 @@ modal.close();</code></pre>
         </div>
         <!-- /CONTAINER -->
         <template id='modal-1'>
-            <h1>This is basic Modal 1</h1>
-            <p>Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consectetur libero alias vel quo quia debitis repellat qui veritatis explicabo molestias facere, doloremque incidunt perferendis voluptas asperiores aliquid, molestiae quis earum.</p>
+            <h1>Template Modal 1</h1>
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Saepe fugiat magnam repudiandae expedita iste facere soluta nobis, culpa consectetur quidem rem, quis vel necessitatibus sit alias impedit nesciunt eius libero!</p>
         </template>
+        </div>
         <script src="./assets/highlight/highlight.js"></script>
         <script src="./src/popzy.js"></script>
         <script>
             // Highlight code
             hljs.initHighlightingOnLoad()
+            const modal1 = new Popzy({
+                enableScrollLock: true,
+                templateId: 'modal-1',
+                // content:"<h1>Content modal 1</h1>",
+                footer: true,
+                // targetScrollLock: () => {
+                //     return document.querySelector('.wrapper')
+                // }
+            })
+            document.querySelector('.js-popzy-modal-1').onclick = () => {
+                modal1.open()
+            }
+            modal1.addFooterButtons('Cancel', "", () => modal1.close())
         </script>
+       
     </body>
    
 </html>

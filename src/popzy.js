@@ -1,29 +1,32 @@
 Popzy.elements = []
 function Popzy(options = {}) {
+    if (!options.content && !options.templateId) {
+        console.error("You must provide one of 'content' or 'templateId'.")
+        return
+    }
+    if (options.content && options.templateId) {
+        options.templateId = null;
+        console.warn("Both 'content' and 'templateId' are specified. 'content' will take precedence, and 'templateId' will be ignored.")
+    }
     this.opt = Object.assign({
-        // content,
-        // templateId, 
+        enableScrollLock: true,
         closeMethods:['button', 'overlay', 'escape'], 
         destroyOnClose:true,
         footer:true, 
         cssClass:[],
-        // onOpen,
-        // onClose
+        targetScrollLock: () => {
+            return document.body
+        }
         }, options)
-    if (!this.opt.content && !this.opt.templateId) {
-        console.error("You must provide one of 'content' or 'templateId'.")
-        return
-    }
-    if (this.opt.content && this.opt.templateId) {
-        this.templateId = null;
-        console.warn("Both 'content' and 'templateId' are specified. 'content' will take precedence, and 'templateId' will be ignored.")
-    }
+   
+   
     if (this.opt.templateId) {
         this.template = document.querySelector(`#${this.opt.templateId}`)
         if (!this.template) {
             console.error("Template Id does not exist");
         }
     }
+    this.content = this.opt.content
     // cho phep dong
     this._allowBackdropClose = this.opt.closeMethods.includes('overlay')
     this._allowButtonClose = this.opt.closeMethods.includes('button')
@@ -48,7 +51,7 @@ Popzy.prototype._getScrollBarWidth = function() {
  // create backdrop
  Popzy.prototype._build = function() {
     this._backdrop = document.createElement('div')
-    this._backdrop.className = 'popzy__backdrop'
+    this._backdrop.className = 'popzy'
 
     const container = document.createElement('div')
     container.className = 'popzy__container'
@@ -64,14 +67,12 @@ Popzy.prototype._getScrollBarWidth = function() {
         container.append(modalClose)
     }
     // Apeend phan tu va content vao dom
-    if (this.opt.content) {
-        this._modalContent.innerHTML = this.opt.content
+    // chia contentNode thành hai trường hợp, nếu không có content thì sẽ lọt vào template
+    const contentNode = this.content ? document.createElement('div') :this.template.content.cloneNode(true)
+    if (this.content) {
+        contentNode.innerHTML = this.content
     }
-    if (this._content) {
-        this._modalContent.innerHTML = this._content
-    }
-    const content = this.template.content.cloneNode(true)
-    this._modalContent.append(content)
+    this._modalContent.append(contentNode)
     container.append(this._modalContent)
     if (this.opt.footer) {
         this._modalFooter = document.createElement('div')
@@ -85,7 +86,8 @@ Popzy.prototype._getScrollBarWidth = function() {
 }
 // set content cho modal
 Popzy.prototype.setContent = function(content) {
-    this._content = content
+    this.content = content
+    this._modalContent.innerHTML = this.content
 }
 // set content cho footer
 Popzy.prototype.setFooterContent = function(content) {
@@ -144,9 +146,16 @@ Popzy.prototype.open = function() {
         // khi this._handleEscape Btn được gán vào phương thức nên khi phương thức được gọi nó sẽ trỏ tới đối tượng gọi nó là document
     }
     // disable scrolling
-    document.body.classList.add('popzy--no-scroll')
-    if (document.body.classList.contains('popzy--no-scroll')) {
-        document.body.style.paddingRight = this._getScrollBarWidth() + 'px'
+    if (this.opt.enableScrollLock) {
+        const target = this.opt.targetScrollLock()
+        // nếu trong trường hợp trang web đủ dài có scrollbar thì mới add
+        if (this.hasScrollBar(target)) {
+            //khoá cuộn
+            target.classList.add('popzy--no-scroll')
+            // tính paddingRight của target cộng với scrollbar
+            const targetPaddingRight = parseInt(getComputedStyle(target).paddingRight)
+            target.style.paddingRight = targetPaddingRight + this._getScrollBarWidth() + 'px'
+        }
     }
     this._ontransitioned(this.opt.onOpen) 
 }
@@ -162,6 +171,13 @@ Popzy.prototype._ontransitioned = function(callback) {
     }
     if (typeof callback === 'function') callback()
 }
+Popzy.prototype.hasScrollBar = function(target) {
+    if ([document.documentElement, document.body].includes(target)) {
+        //  nếu target là body hoặc html thì một trong hai điều kiện sẽ được thực thi
+        return document.documentElement.scrollHeight > document.documentElement.clientHeight || document.body.scrollHeight > document.body.clientHeight
+    }
+    return target.scrollHeight > target.clientHeight
+}
 Popzy.prototype.close = function(destroy = this.opt.destroyOnClose) {
     this._backdrop.classList.remove('popzy--show')
     Popzy.elements.pop()
@@ -176,9 +192,13 @@ Popzy.prototype.close = function(destroy = this.opt.destroyOnClose) {
             // nếu destroy = true thì xoá toàn bộ element ra khỏi dom
         }
         if (typeof this.opt.onClose === 'function') this.opt.onClose()
-        if (!Popzy.elements.length) {
-            document.body.classList.remove('popzy--no-scroll')
-            document.body.style.paddingRight = ''
+        if (!Popzy.elements.length && this.opt.enableScrollLock) {
+            const target = this.opt.targetScrollLock()
+            if (this.hasScrollBar(target)) {
+                target.classList.remove('popzy--no-scroll')
+                target.style.paddingRight = ''
+                console.log(this.hasScrollBar(target));
+            }
         }  
     })
 }
